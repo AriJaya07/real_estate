@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['title', 'location', 'price', 'type', 'image', 'description'])]
+#[Fillable(['title', 'location', 'price', 'type', 'image', 'description', 'is_published'])]
 class Property extends Model
 {
     /** @use HasFactory<PropertyFactory> */
@@ -18,6 +18,7 @@ class Property extends Model
     {
         return [
             'price' => 'decimal:2',
+            'is_published' => 'boolean',
         ];
     }
 

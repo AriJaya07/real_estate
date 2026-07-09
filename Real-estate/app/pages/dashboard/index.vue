@@ -12,6 +12,7 @@ const loading = ref(true)
 const { formatPrice } = useFormat()
 
 onMounted(async () => {
+  propertyStore.manageMode = true
   try {
     const [usersResponse] = await Promise.all([
       api.get<{ data: User[] }>('/users'),
@@ -27,7 +28,7 @@ onMounted(async () => {
 const stats = computed(() => [
   { label: 'Properties', value: propertyStore.properties.length },
   { label: 'Users', value: users.value.length },
-  { label: 'My Submissions', value: submissionStore.submissions.length },
+  { label: 'My Submissions', value: submissionStore.meta.total },
 ])
 </script>
 

@@ -22,7 +22,7 @@ class PropertySubmissionFactory extends Factory
             'email' => fake()->safeEmail(),
             'address' => fake()->address(),
             'listing_price' => fake()->numberBetween(120000, 2500000),
-            'status' => fake()->randomElement(['available', 'pending', 'sold']),
+            'status' => fake()->randomElement(['draft', 'pending', 'published', 'rejected']),
             'description' => fake()->paragraph(2),
             'notes' => fake()->sentence(),
             'publish_ready' => fake()->boolean(),

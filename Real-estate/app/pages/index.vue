@@ -2,6 +2,7 @@
 const propertyStore = usePropertyStore()
 
 onMounted(() => {
+  propertyStore.manageMode = false
   propertyStore.fetchProperties()
 })
 </script>

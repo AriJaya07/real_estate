@@ -11,6 +11,7 @@ export const usePropertyStore = defineStore('property', () => {
   const loading = ref(false)
   const searching = ref(false)
   const saving = ref(false)
+  const manageMode = ref(false)
 
   let abortController: AbortController | null = null
 
@@ -29,7 +30,10 @@ export const usePropertyStore = defineStore('property', () => {
     loading.value = true
     try {
       const { data } = await api.get<{ data: Property[] }>('/properties', {
-        params: { search: search.value.trim() || undefined },
+        params: {
+          search: search.value.trim() || undefined,
+          all: manageMode.value ? 1 : undefined,
+        },
       })
       properties.value = data.data
     } finally {
@@ -44,7 +48,10 @@ export const usePropertyStore = defineStore('property', () => {
     searching.value = true
     try {
       const { data } = await api.get<{ data: Property[] }>('/properties', {
-        params: { search: search.value.trim() || undefined },
+        params: {
+          search: search.value.trim() || undefined,
+          all: manageMode.value ? 1 : undefined,
+        },
         signal: controller.signal,
       })
       properties.value = data.data
@@ -109,6 +116,16 @@ export const usePropertyStore = defineStore('property', () => {
     }
   }
 
+  async function togglePublish(id: number, isPublished: boolean): Promise<void> {
+    const { data } = await api.patch<{ data: Property }>(`/properties/${id}/publish`, {
+      is_published: isPublished,
+    })
+    const index = properties.value.findIndex((property) => property.id === id)
+    if (index !== -1) {
+      properties.value[index] = data.data
+    }
+  }
+
   async function deleteProperty(id: number): Promise<void> {
     await api.delete(`/properties/${id}`)
     properties.value = properties.value.filter((property) => property.id !== id)
@@ -121,12 +138,14 @@ export const usePropertyStore = defineStore('property', () => {
     loading,
     searching,
     saving,
+    manageMode,
     filtered,
     fetchProperties,
     fetchProperty,
     createProperty,
     updateProperty,
     importProperties,
+    togglePublish,
     deleteProperty,
   }
 })

@@ -9,21 +9,23 @@ use Throwable;
 
 class N8nWebhookService
 {
-    public function send(PropertySubmission $submission): void
+    public function send(PropertySubmission $submission): bool
     {
         $url = config('services.n8n.webhook_url');
 
         if (! $url) {
-            return;
+            return false;
         }
 
         try {
-            Http::timeout(5)->post($url, $this->payload($submission));
+            return Http::timeout(5)->post($url, $this->payload($submission))->successful();
         } catch (Throwable $exception) {
             Log::warning('n8n webhook delivery failed.', [
                 'submission_id' => $submission->id,
                 'error' => $exception->getMessage(),
             ]);
+
+            return false;
         }
     }
 
@@ -32,6 +34,7 @@ class N8nWebhookService
         return [
             'submission_id' => $submission->id,
             'publish_callback_url' => url('/api/webhooks/publish'),
+            'status_callback_url' => url('/api/webhooks/status'),
             'user' => [
                 'id' => $submission->user->id,
                 'username' => $submission->user->username,

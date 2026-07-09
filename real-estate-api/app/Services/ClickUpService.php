@@ -9,28 +9,31 @@ use Throwable;
 
 class ClickUpService
 {
-    public function createTask(PropertySubmission $submission): void
+    public function createTask(PropertySubmission $submission): bool
     {
         $token = config('services.clickup.token');
         $listId = config('services.clickup.list_id');
 
         if (! $token || ! $listId) {
-            return;
+            return false;
         }
 
         try {
-            Http::withHeaders(['Authorization' => $token])
+            return Http::withHeaders(['Authorization' => $token])
                 ->timeout(5)
                 ->post("https://api.clickup.com/api/v2/list/{$listId}/task", [
                     'name' => "Property Submission: {$submission->property->title}",
                     'description' => $this->taskDescription($submission),
                     'status' => 'to do',
-                ]);
+                ])
+                ->successful();
         } catch (Throwable $exception) {
             Log::warning('ClickUp task creation failed.', [
                 'submission_id' => $submission->id,
                 'error' => $exception->getMessage(),
             ]);
+
+            return false;
         }
     }
 

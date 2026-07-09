@@ -16,10 +16,11 @@ class UpdatePropertyRequest extends FormRequest
         return [
             'title' => ['required', 'string', 'max:255'],
             'location' => ['required', 'string', 'max:255'],
-            'price' => ['required', 'numeric', 'min:0'],
+            'price' => ['required', 'numeric', 'min:0', 'max:999999999999.99'],
             'type' => ['required', 'string', 'in:House,Apartment,Villa,Land,Office'],
             'image' => ['nullable', 'url:http,https', 'max:2048'],
             'description' => ['required', 'string', 'max:5000'],
+            'is_published' => ['sometimes', 'boolean'],
         ];
     }
 
@@ -27,6 +28,7 @@ class UpdatePropertyRequest extends FormRequest
     {
         return [
             'image.url' => 'The image must be a valid URL starting with http or https.',
+            'price.max' => 'The price may not exceed $999,999,999,999.99.',
         ];
     }
 }

@@ -20,8 +20,18 @@ const importFile = ref<File | null>(null)
 const importResult = ref<ImportResult | null>(null)
 
 onMounted(() => {
+  propertyStore.manageMode = true
   propertyStore.fetchProperties()
 })
+
+async function handleTogglePublish(property: Property) {
+  try {
+    await propertyStore.togglePublish(property.id, !property.is_published)
+    push(property.is_published ? 'Property unpublished.' : 'Property published to website.')
+  } catch (exception) {
+    push(extractErrorMessage(exception), 'error')
+  }
+}
 
 function openCreate() {
   editing.value = null
@@ -157,6 +167,7 @@ function downloadTemplate() {
               <th class="hidden px-6 py-3.5 text-left font-semibold text-gray-700 md:table-cell">Location</th>
               <th class="hidden px-6 py-3.5 text-left font-semibold text-gray-700 sm:table-cell">Type</th>
               <th class="px-6 py-3.5 text-left font-semibold text-gray-700">Price</th>
+              <th class="px-6 py-3.5 text-left font-semibold text-gray-700">Status</th>
               <th class="px-6 py-3.5 text-right font-semibold text-gray-700">Actions</th>
             </tr>
           </thead>
@@ -189,7 +200,33 @@ function downloadTemplate() {
               </td>
               <td class="px-6 py-4 font-semibold text-primary-600">{{ formatPrice(property.price) }}</td>
               <td class="px-6 py-4">
+                <span
+                  class="rounded-full px-3 py-1 text-xs font-semibold"
+                  :class="property.is_published ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'"
+                >
+                  {{ property.is_published ? 'Published' : 'Pending Review' }}
+                </span>
+              </td>
+              <td class="px-6 py-4">
                 <div class="flex justify-end gap-2">
+                  <button
+                    type="button"
+                    class="rounded-lg p-2 transition"
+                    :class="property.is_published
+                      ? 'text-green-600 hover:bg-amber-50 hover:text-amber-600'
+                      : 'text-amber-500 hover:bg-green-50 hover:text-green-600'"
+                    :aria-label="property.is_published ? `Unpublish ${property.title}` : `Publish ${property.title}`"
+                    :title="property.is_published ? 'Unpublish from website' : 'Publish to website'"
+                    @click="handleTogglePublish(property)"
+                  >
+                    <svg v-if="property.is_published" class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    <svg v-else class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" />
+                    </svg>
+                  </button>
                   <button
                     type="button"
                     class="rounded-lg p-2 text-gray-500 transition hover:bg-primary-50 hover:text-primary-600"
@@ -233,7 +270,8 @@ function downloadTemplate() {
         <p class="text-sm text-gray-600">
           Upload a CSV file with columns
           <span class="font-mono text-xs font-semibold text-gray-800">title, location, price, type, image, description</span>.
-          The image column takes an image URL and may be empty.
+          The image column takes an image URL and may be empty. Imported listings arrive as
+          <span class="font-semibold text-amber-700">Pending Review</span> — edit and publish them from this table.
         </p>
 
         <label

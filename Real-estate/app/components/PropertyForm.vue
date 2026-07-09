@@ -17,10 +17,11 @@ const emit = defineEmits<{
 const form = reactive({
   title: props.property?.title ?? '',
   location: props.property?.location ?? '',
-  price: props.property?.price ?? ('' as number | string),
+  price: (props.property?.price ?? '') as number | '',
   type: (props.property?.type ?? 'House') as PropertyType,
   image: props.property?.image ?? '',
   description: props.property?.description ?? '',
+  is_published: props.property?.is_published ?? true,
 })
 
 const previewFailed = ref(false)
@@ -50,6 +51,7 @@ function handleSubmit() {
     type: form.type,
     image: form.image.trim() || null,
     description: form.description,
+    is_published: form.is_published,
   })
 }
 </script>
@@ -78,9 +80,14 @@ function handleSubmit() {
 
     <Input v-model="form.title" label="Title" placeholder="Modern Family House" required />
     <Input v-model="form.location" label="Location" placeholder="Canggu, Bali" required />
-    <Input v-model="form.price" label="Price" type="number" placeholder="450000" required />
+    <CurrencyInput v-model="form.price" label="Price" placeholder="450,000.00" required />
     <Select v-model="form.type" label="Property Type" :options="typeOptions" required />
     <Textarea v-model="form.description" label="Description" placeholder="Describe the property..." required />
+    <Switch
+      v-model="form.is_published"
+      label="Published"
+      description="Visible on the public website"
+    />
 
     <p v-if="error" role="alert" class="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-600">{{ error }}</p>
 

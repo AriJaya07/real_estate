@@ -13,8 +13,7 @@ const form = reactive({
   phone: '',
   email: '',
   address: '',
-  listing_price: '' as number | string,
-  status: 'available' as SubmissionStatus,
+  listing_price: '' as number | '',
   description: '',
   notes: '',
   publish_ready: false,
@@ -22,13 +21,8 @@ const form = reactive({
 
 const error = ref('')
 const successOpen = ref(false)
+const successStatus = ref<SubmissionStatus>('pending')
 const savingDraft = ref(false)
-
-const statusOptions = [
-  { label: 'Available', value: 'available' },
-  { label: 'Pending', value: 'pending' },
-  { label: 'Sold', value: 'sold' },
-]
 
 onMounted(() => {
   propertyStore.fetchProperty(Number(route.params.id))
@@ -46,6 +40,7 @@ async function saveSubmission(status: SubmissionStatus) {
       status,
       property_id: propertyStore.selected.id,
     })
+    successStatus.value = status
     successOpen.value = true
   } catch (exception) {
     error.value = extractErrorMessage(exception)
@@ -62,12 +57,12 @@ async function handleDraft() {
 }
 
 function handleSubmit() {
-  saveSubmission(form.status)
+  saveSubmission('pending')
 }
 
 async function closeSuccess() {
   successOpen.value = false
-  await navigateTo('/dashboard')
+  await navigateTo(successStatus.value === 'draft' ? '/' : '/dashboard/submissions')
 }
 </script>
 
@@ -80,7 +75,7 @@ async function closeSuccess() {
       title="Property not found"
       message="The property you are looking for does not exist or has been removed."
     >
-      <SecondaryButton @click="navigateTo('/dashboard')">Back to Dashboard</SecondaryButton>
+      <SecondaryButton @click="navigateTo('/')">Back to Listings</SecondaryButton>
     </EmptyState>
 
     <template v-else>
@@ -136,7 +131,9 @@ async function closeSuccess() {
 
       <div v-else class="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm sm:p-8">
         <h2 class="text-lg font-semibold text-gray-900">Property Submission</h2>
-        <p class="mt-1 text-sm text-gray-500">Fill in the owner and listing details for this property</p>
+        <p class="mt-1 text-sm text-gray-500">
+          Fill in the owner and listing details. Submitted listings go through review before they are published.
+        </p>
 
         <hr class="my-6 border-gray-200">
 
@@ -146,43 +143,51 @@ async function closeSuccess() {
             <Input v-model="form.phone" label="Phone Number" type="tel" placeholder="+62 812 3456 7890" required />
             <Input v-model="form.email" label="Email" type="email" placeholder="owner@example.com" required />
             <Input v-model="form.address" label="Address" placeholder="Street, city, region" required />
-            <Input v-model="form.listing_price" label="Listing Price" type="number" placeholder="450000" required />
-            <Select v-model="form.status" label="Property Status" :options="statusOptions" required />
+            <div class="sm:col-span-2">
+              <CurrencyInput v-model="form.listing_price" label="Listing Price" placeholder="1,250,000.00" required />
+            </div>
           </div>
           <Textarea v-model="form.description" label="Description" placeholder="Describe the listing..." required />
           <Textarea v-model="form.notes" label="Notes" placeholder="Internal notes (optional)" :rows="3" />
           <Switch
             v-model="form.publish_ready"
             label="Publish Ready"
-            description="Mark this submission as ready for website publishing"
+            description="Allow this listing to be published to the website once approved"
           />
 
-          <p v-if="error" class="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-600">{{ error }}</p>
+          <p v-if="error" role="alert" class="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-600">{{ error }}</p>
 
           <div class="flex flex-col-reverse gap-3 pt-2 sm:flex-row sm:justify-end">
             <SecondaryButton :loading="savingDraft" :disabled="submissionStore.submitting" @click="handleDraft">
               Save Draft
             </SecondaryButton>
             <PrimaryButton type="submit" :loading="submissionStore.submitting && !savingDraft" :disabled="savingDraft">
-              Submit
+              Submit for Review
             </PrimaryButton>
           </div>
         </form>
       </div>
     </template>
 
-    <Modal v-model="successOpen" title="Submission successful">
+    <Modal v-model="successOpen" :title="successStatus === 'draft' ? 'Draft saved' : 'Submitted for review'">
       <div class="space-y-4">
         <div class="flex items-center gap-3 rounded-xl bg-green-50 px-4 py-3">
           <svg class="size-6 shrink-0 text-green-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
             <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
           <p class="text-sm text-green-800">
-            Your property submission has been saved and sent for processing.
+            <template v-if="successStatus === 'draft'">
+              Your draft has been saved. You can submit it for review later.
+            </template>
+            <template v-else>
+              Your submission is now pending review. It will be published to the website once approved.
+            </template>
           </p>
         </div>
         <div class="flex justify-end">
-          <PrimaryButton @click="closeSuccess">Back to Dashboard</PrimaryButton>
+          <PrimaryButton @click="closeSuccess">
+            {{ successStatus === 'draft' ? 'Back to Listings' : 'View My Submissions' }}
+          </PrimaryButton>
         </div>
       </div>
     </Modal>

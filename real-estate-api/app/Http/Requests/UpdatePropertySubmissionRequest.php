@@ -4,7 +4,7 @@ namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class StorePropertySubmissionRequest extends FormRequest
+class UpdatePropertySubmissionRequest extends FormRequest
 {
     public function authorize(): bool
     {
@@ -14,7 +14,6 @@ class StorePropertySubmissionRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'property_id' => ['required', 'integer', 'exists:properties,id'],
             'owner_name' => ['required', 'string', 'max:255'],
             'phone' => ['required', 'string', 'max:30'],
             'email' => ['required', 'email', 'max:255'],

@@ -12,12 +12,20 @@ export interface Property {
   type: PropertyType
   image: string | null
   description: string
+  is_published: boolean
   created_at: string
 }
 
 export type PropertyType = 'House' | 'Apartment' | 'Villa' | 'Land' | 'Office'
 
-export type SubmissionStatus = 'draft' | 'available' | 'pending' | 'sold'
+export type SubmissionStatus =
+  | 'draft'
+  | 'pending'
+  | 'ai_processing'
+  | 'clickup_review'
+  | 'ready'
+  | 'published'
+  | 'rejected'
 
 export interface PropertySubmission {
   id: number
@@ -42,6 +50,7 @@ export interface PropertyPayload {
   type: PropertyType
   image: string | null
   description: string
+  is_published: boolean
 }
 
 export interface ImportResult {
@@ -66,3 +75,5 @@ export interface SubmissionPayload {
   notes: string
   publish_ready: boolean
 }
+
+export type UpdateSubmissionPayload = Omit<SubmissionPayload, 'property_id'>

@@ -17,7 +17,10 @@ class PropertyController extends Controller
 {
     public function index(Request $request): AnonymousResourceCollection
     {
+        $includeUnpublished = $request->user('sanctum') !== null && $request->boolean('all');
+
         $properties = Property::query()
+            ->when(! $includeUnpublished, fn ($query) => $query->where('is_published', true))
             ->when($request->query('search'), function ($query, $search) {
                 $query->where(function ($query) use ($search) {
                     $query->where('title', 'ilike', "%{$search}%")
@@ -46,6 +49,17 @@ class PropertyController extends Controller
     public function update(UpdatePropertyRequest $request, Property $property): PropertyResource
     {
         $property->update($request->validated());
+
+        return new PropertyResource($property);
+    }
+
+    public function publish(Request $request, Property $property): PropertyResource
+    {
+        $validated = $request->validate([
+            'is_published' => ['required', 'boolean'],
+        ]);
+
+        $property->update($validated);
 
         return new PropertyResource($property);
     }
