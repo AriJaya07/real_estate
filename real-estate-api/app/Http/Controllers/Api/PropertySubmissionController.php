@@ -9,6 +9,7 @@ use App\Http\Resources\PropertySubmissionResource;
 use App\Models\PropertySubmission;
 use App\Services\ClickUpService;
 use App\Services\N8nWebhookService;
+use App\Services\SubmissionPublisher;
 use Illuminate\Contracts\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -22,6 +23,7 @@ class PropertySubmissionController extends Controller
     public function __construct(
         protected N8nWebhookService $n8n,
         protected ClickUpService $clickUp,
+        protected SubmissionPublisher $publisher,
     ) {}
 
     public function index(Request $request): AnonymousResourceCollection
@@ -118,6 +120,51 @@ class PropertySubmissionController extends Controller
             ->orderBy('created_at', $request->query('sort') === 'oldest' ? 'asc' : 'desc');
     }
 
+    public function publish(Request $request, PropertySubmission $propertySubmission): PropertySubmissionResource
+    {
+        abort_if($propertySubmission->user_id !== $request->user()->id, 403, 'You can only publish your own submissions.');
+        abort_if($propertySubmission->status !== 'ready', 422, 'Only submissions that are ready to publish can be published.');
+
+        $propertySubmission->load('property');
+        $this->publisher->publish($propertySubmission);
+
+        return new PropertySubmissionResource($propertySubmission->load('property'));
+    }
+
+    public function syncClickUp(Request $request): JsonResponse
+    {
+        $submissions = $request->user()
+            ->submissions()
+            ->with('property')
+            ->whereIn('status', ['ai_processing', 'clickup_review'])
+            ->whereNotNull('clickup_task_id')
+            ->get();
+
+        $updated = 0;
+
+        foreach ($submissions as $submission) {
+            $status = $this->clickUp->getTaskStatus($submission->clickup_task_id);
+
+            if ($status === null) {
+                continue;
+            }
+
+            if (in_array($status['type'], ['done', 'closed'], true)) {
+                if ($submission->publish_ready) {
+                    $this->publisher->publish($submission);
+                } else {
+                    $submission->update(['status' => 'ready']);
+                }
+                $updated++;
+            } elseif ($submission->status !== 'clickup_review') {
+                $submission->update(['status' => 'clickup_review']);
+                $updated++;
+            }
+        }
+
+        return response()->json(['updated' => $updated, 'checked' => $submissions->count()]);
+    }
+
     protected function dispatchPipeline(PropertySubmission $submission): void
     {
         if ($submission->status !== 'pending') {
@@ -130,8 +177,10 @@ class PropertySubmissionController extends Controller
             return;
         }
 
-        if ($this->clickUp->createTask($submission)) {
-            $submission->update(['status' => 'clickup_review']);
+        $taskId = $this->clickUp->createTask($submission);
+
+        if ($taskId !== null) {
+            $submission->update(['status' => 'clickup_review', 'clickup_task_id' => $taskId]);
         }
     }
 }

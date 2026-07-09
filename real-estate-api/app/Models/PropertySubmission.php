@@ -22,6 +22,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'publish_ready',
     'published_at',
     'published_property_id',
+    'clickup_task_id',
 ])]
 class PropertySubmission extends Model
 {

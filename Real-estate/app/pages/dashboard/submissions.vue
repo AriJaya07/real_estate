@@ -45,9 +45,42 @@ const sortOptions = [
   { label: 'Oldest first', value: 'oldest' },
 ]
 
-onMounted(() => {
-  submissionStore.fetchSubmissions()
+const syncing = ref(false)
+const publishingId = ref<number | null>(null)
+
+onMounted(async () => {
+  await submissionStore.fetchSubmissions()
+  try {
+    await submissionStore.syncClickUp()
+  } catch {
+  }
 })
+
+async function handleSync() {
+  syncing.value = true
+  try {
+    const result = await submissionStore.syncClickUp()
+    push(result.updated > 0
+      ? `${result.updated} submission${result.updated === 1 ? '' : 's'} updated from ClickUp.`
+      : `Up to date — ${result.checked} submission${result.checked === 1 ? '' : 's'} checked.`)
+  } catch (exception) {
+    push(extractErrorMessage(exception), 'error')
+  } finally {
+    syncing.value = false
+  }
+}
+
+async function handlePublish(submission: PropertySubmission) {
+  publishingId.value = submission.id
+  try {
+    await submissionStore.publishSubmission(submission.id)
+    push('Listing published to the website.')
+  } catch (exception) {
+    push(extractErrorMessage(exception), 'error')
+  } finally {
+    publishingId.value = null
+  }
+}
 
 function openDetails(submission: PropertySubmission) {
   selected.value = submission
@@ -150,12 +183,20 @@ const detailFields = computed(() => {
         <h1 class="text-2xl font-bold tracking-tight text-gray-900">Submissions</h1>
         <p class="mt-1 text-sm text-gray-500">Track every submission through the publishing pipeline</p>
       </div>
-      <SecondaryButton :loading="submissionStore.exporting" @click="handleExport">
-        <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
-        </svg>
-        Export CSV
-      </SecondaryButton>
+      <div class="flex flex-wrap gap-3">
+        <SecondaryButton :loading="syncing" @click="handleSync">
+          <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+          </svg>
+          Sync ClickUp
+        </SecondaryButton>
+        <SecondaryButton :loading="submissionStore.exporting" @click="handleExport">
+          <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+          </svg>
+          Export CSV
+        </SecondaryButton>
+      </div>
     </div>
 
     <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
@@ -222,6 +263,18 @@ const detailFields = computed(() => {
                 </td>
                 <td class="px-6 py-4">
                   <div class="flex justify-end gap-1">
+                    <button
+                      v-if="submission.status === 'ready'"
+                      type="button"
+                      :disabled="publishingId === submission.id"
+                      class="inline-flex items-center gap-1.5 rounded-lg bg-primary-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-primary-700 disabled:opacity-60"
+                      @click="handlePublish(submission)"
+                    >
+                      <svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 19.5v-15m0 0l-6.75 6.75M12 4.5l6.75 6.75" />
+                      </svg>
+                      Publish
+                    </button>
                     <button
                       type="button"
                       class="rounded-lg p-2 text-gray-500 transition hover:bg-primary-50 hover:text-primary-600"

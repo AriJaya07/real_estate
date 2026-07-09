@@ -86,6 +86,19 @@ export const useSubmissionStore = defineStore('submission', () => {
     await fetchSubmissions()
   }
 
+  async function syncClickUp(): Promise<{ updated: number; checked: number }> {
+    const { data } = await api.post<{ updated: number; checked: number }>('/property-submissions/sync-clickup')
+    if (data.updated > 0) {
+      await fetchSubmissions()
+    }
+    return data
+  }
+
+  async function publishSubmission(id: number): Promise<void> {
+    await api.post(`/property-submissions/${id}/publish`)
+    await fetchSubmissions()
+  }
+
   async function exportCsv(): Promise<void> {
     exporting.value = true
     try {
@@ -118,6 +131,8 @@ export const useSubmissionStore = defineStore('submission', () => {
     submit,
     updateSubmission,
     deleteSubmission,
+    syncClickUp,
+    publishSubmission,
     exportCsv,
   }
 })

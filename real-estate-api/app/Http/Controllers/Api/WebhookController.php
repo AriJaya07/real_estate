@@ -5,14 +5,16 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\PropertyResource;
 use App\Http\Resources\PropertySubmissionResource;
-use App\Models\Property;
 use App\Models\PropertySubmission;
+use App\Services\SubmissionPublisher;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class WebhookController extends Controller
 {
     protected const PIPELINE_STATUSES = ['pending', 'ai_processing', 'clickup_review', 'ready'];
+
+    public function __construct(protected SubmissionPublisher $publisher) {}
 
     public function publish(Request $request): JsonResponse
     {
@@ -21,21 +23,7 @@ class WebhookController extends Controller
         abort_if(! in_array($submission->status, self::PIPELINE_STATUSES, true), 422, 'Only submissions in the review pipeline can be published.');
         abort_if(! $submission->publish_ready, 422, 'Submission is not marked as publish ready.');
 
-        $property = Property::create([
-            'title' => $submission->property->title,
-            'location' => $submission->address,
-            'price' => $submission->listing_price,
-            'type' => $submission->property->type,
-            'image' => $submission->property->image,
-            'description' => $submission->description,
-            'is_published' => true,
-        ]);
-
-        $submission->update([
-            'status' => 'published',
-            'published_at' => now(),
-            'published_property_id' => $property->id,
-        ]);
+        $property = $this->publisher->publish($submission);
 
         return response()->json([
             'message' => 'Submission published to website.',
@@ -49,11 +37,12 @@ class WebhookController extends Controller
 
         $validated = $request->validate([
             'status' => ['required', 'string', 'in:ai_processing,clickup_review,ready,rejected'],
+            'clickup_task_id' => ['sometimes', 'string', 'max:100'],
         ]);
 
         abort_if(! in_array($submission->status, self::PIPELINE_STATUSES, true), 422, 'Only submissions in the review pipeline can change status.');
 
-        $submission->update(['status' => $validated['status']]);
+        $submission->update($validated);
 
         return response()->json([
             'message' => 'Submission status updated.',

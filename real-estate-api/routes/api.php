@@ -26,9 +26,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('properties', PropertyController::class)->except(['index', 'show']);
 
     Route::get('/property-submissions/export', [PropertySubmissionController::class, 'export']);
+    Route::post('/property-submissions/sync-clickup', [PropertySubmissionController::class, 'syncClickUp']);
     Route::get('/property-submissions', [PropertySubmissionController::class, 'index']);
     Route::post('/property-submissions', [PropertySubmissionController::class, 'store']);
     Route::put('/property-submissions/{propertySubmission}', [PropertySubmissionController::class, 'update']);
+    Route::post('/property-submissions/{propertySubmission}/publish', [PropertySubmissionController::class, 'publish']);
     Route::delete('/property-submissions/{propertySubmission}', [PropertySubmissionController::class, 'destroy']);
 
     Route::get('/users', [UserController::class, 'index']);
