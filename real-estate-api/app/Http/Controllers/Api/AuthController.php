@@ -18,7 +18,12 @@ class AuthController extends Controller
     {
         $user = User::create($request->validated());
 
-        return (new UserResource($user))->response()->setStatusCode(201);
+        $token = $user->createToken('auth')->plainTextToken;
+
+        return response()->json([
+            'user' => new UserResource($user),
+            'token' => $token,
+        ], 201);
     }
 
     public function login(LoginRequest $request): JsonResponse

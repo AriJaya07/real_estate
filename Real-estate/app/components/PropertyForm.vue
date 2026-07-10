@@ -73,8 +73,9 @@ function handleSubmit() {
         class="aspect-[21/9] w-full object-cover"
         @error="previewFailed = true"
       >
-      <p v-else class="px-4 py-6 text-center text-sm text-gray-500">
-        Image could not be loaded. Check the URL.
+      <p v-else class="px-4 py-6 text-center text-sm text-amber-700">
+        This image can't be displayed — the URL may be wrong, point to a web page instead of an image,
+        or the site may block embedding. The listing will show a placeholder unless you use a direct image link.
       </p>
     </div>
 

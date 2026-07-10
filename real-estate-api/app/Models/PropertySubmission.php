@@ -2,8 +2,10 @@
 
 namespace App\Models;
 
+use App\Enums\SubmissionStatus;
 use Database\Factories\PropertySubmissionFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -23,6 +25,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'published_at',
     'published_property_id',
     'clickup_task_id',
+    'clickup_status',
 ])]
 class PropertySubmission extends Model
 {
@@ -51,5 +54,14 @@ class PropertySubmission extends Model
     public function publishedProperty(): BelongsTo
     {
         return $this->belongsTo(Property::class, 'published_property_id');
+    }
+
+    /**
+     * Submissions still waiting on a ClickUp task outcome.
+     */
+    public function scopeAwaitingClickUp(Builder $query): Builder
+    {
+        return $query->whereIn('status', SubmissionStatus::awaitingClickUp())
+            ->whereNotNull('clickup_task_id');
     }
 }

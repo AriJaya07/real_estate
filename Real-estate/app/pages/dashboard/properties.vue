@@ -5,7 +5,7 @@ import type { ImportResult, Property, PropertyPayload } from '~/types'
 definePageMeta({ layout: 'admin', middleware: 'auth' })
 
 const propertyStore = usePropertyStore()
-const { formatPrice } = useFormat()
+const { formatPrice, formatDate } = useFormat()
 const { push } = useToast()
 
 const formOpen = ref(false)
@@ -175,20 +175,7 @@ function downloadTemplate() {
             <tr v-for="property in propertyStore.filtered" :key="property.id" class="transition hover:bg-gray-50">
               <td class="px-6 py-4">
                 <div class="flex items-center gap-3">
-                  <img
-                    v-if="property.image"
-                    :src="property.image"
-                    :alt="property.title"
-                    class="size-10 shrink-0 rounded-lg object-cover"
-                  >
-                  <span
-                    v-else
-                    class="flex size-10 shrink-0 items-center justify-center rounded-lg bg-gray-100 text-gray-300"
-                  >
-                    <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12l8.954-8.955a1.126 1.126 0 011.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75" />
-                    </svg>
-                  </span>
+                  <PropertyImage :src="property.image" :alt="property.title" class="size-10 shrink-0 rounded-lg" />
                   <span class="font-medium text-gray-900">{{ property.title }}</span>
                 </div>
               </td>
@@ -204,8 +191,11 @@ function downloadTemplate() {
                   class="rounded-full px-3 py-1 text-xs font-semibold"
                   :class="property.is_published ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'"
                 >
-                  {{ property.is_published ? 'Published' : 'Pending Review' }}
+                  {{ property.is_published ? 'Published' : 'Unpublished' }}
                 </span>
+                <p v-if="property.is_published && property.published_at" class="mt-1 text-xs text-gray-500">
+                  Since {{ formatDate(property.published_at) }}
+                </p>
               </td>
               <td class="px-6 py-4">
                 <div class="flex justify-end gap-2">
@@ -271,7 +261,7 @@ function downloadTemplate() {
           Upload a CSV file with columns
           <span class="font-mono text-xs font-semibold text-gray-800">title, location, price, type, image, description</span>.
           The image column takes an image URL and may be empty. Imported listings arrive as
-          <span class="font-semibold text-amber-700">Pending Review</span> — edit and publish them from this table.
+          <span class="font-semibold text-amber-700">Unpublished</span> — review and publish them from this table.
         </p>
 
         <label

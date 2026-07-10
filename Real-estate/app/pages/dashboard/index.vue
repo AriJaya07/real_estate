@@ -69,12 +69,7 @@ const stats = computed(() => [
             :key="property.id"
             class="flex items-center gap-4 px-6 py-4"
           >
-            <img
-              v-if="property.image"
-              :src="property.image"
-              :alt="property.title"
-              class="size-12 rounded-xl object-cover"
-            >
+            <PropertyImage :src="property.image" :alt="property.title" class="size-12 shrink-0 rounded-xl" />
             <div class="min-w-0 flex-1">
               <p class="truncate text-sm font-semibold text-gray-900">{{ property.title }}</p>
               <p class="truncate text-sm text-gray-500">{{ property.location }}</p>

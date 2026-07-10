@@ -1,5 +1,6 @@
 <script setup lang="ts">
 const propertyStore = usePropertyStore()
+const auth = useAuthStore()
 
 onMounted(() => {
   propertyStore.manageMode = false
@@ -18,6 +19,25 @@ onMounted(() => {
       </p>
       <div class="mx-auto mt-8 max-w-2xl text-left">
         <SearchBar v-model="propertyStore.search" :loading="propertyStore.searching" />
+      </div>
+
+      <div v-if="!auth.isAuthenticated" class="mx-auto mt-6 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
+        <p class="text-sm text-primary-100">Want to list your own property?</p>
+        <NuxtLink
+          to="/register"
+          class="rounded-xl bg-white px-5 py-2.5 text-sm font-semibold text-primary-700 shadow-sm transition hover:bg-primary-50"
+        >
+          Create a free account
+        </NuxtLink>
+      </div>
+      <div v-else class="mx-auto mt-6 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
+        <p class="text-sm text-primary-100">Select any listing below to submit your property, or manage everything from your dashboard.</p>
+        <NuxtLink
+          to="/dashboard"
+          class="rounded-xl bg-white px-5 py-2.5 text-sm font-semibold text-primary-700 shadow-sm transition hover:bg-primary-50"
+        >
+          Go to Dashboard
+        </NuxtLink>
       </div>
     </div>
 

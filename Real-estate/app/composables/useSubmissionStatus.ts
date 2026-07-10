@@ -30,19 +30,19 @@ const STATUS_META: Record<SubmissionStatus, StatusMeta> = {
     label: 'In ClickUp Review',
     badge: 'bg-purple-100 text-purple-700',
     dot: 'bg-purple-500',
-    next: 'Awaiting team approval in ClickUp.',
+    next: 'Awaiting team approval in ClickUp. Press Sync ClickUp (or reload the page) to pull the latest status.',
   },
   ready: {
     label: 'Ready to Publish',
     badge: 'bg-teal-100 text-teal-700',
     dot: 'bg-teal-500',
-    next: 'Approved. Publishing to the website shortly.',
+    next: 'Approved — press Publish to put the listing live on the website.',
   },
   published: {
     label: 'Published',
     badge: 'bg-green-100 text-green-700',
     dot: 'bg-green-500',
-    next: 'Live on the website.',
+    next: 'Live on the website. Open the listing, or manage it from Dashboard → Properties.',
   },
   rejected: {
     label: 'Rejected',

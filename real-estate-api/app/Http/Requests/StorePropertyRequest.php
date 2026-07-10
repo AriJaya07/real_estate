@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Rules\PublicImageUrl;
 use Illuminate\Foundation\Http\FormRequest;
 
 class StorePropertyRequest extends FormRequest
@@ -18,7 +19,7 @@ class StorePropertyRequest extends FormRequest
             'location' => ['required', 'string', 'max:255'],
             'price' => ['required', 'numeric', 'min:0', 'max:999999999999.99'],
             'type' => ['required', 'string', 'in:House,Apartment,Villa,Land,Office'],
-            'image' => ['nullable', 'url:http,https', 'max:2048'],
+            'image' => ['nullable', 'url:http,https', 'max:2048', new PublicImageUrl],
             'description' => ['required', 'string', 'max:5000'],
             'is_published' => ['sometimes', 'boolean'],
         ];

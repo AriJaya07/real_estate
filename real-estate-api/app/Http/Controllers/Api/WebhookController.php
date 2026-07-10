@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Enums\SubmissionStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\PropertyResource;
 use App\Http\Resources\PropertySubmissionResource;
@@ -12,15 +13,13 @@ use Illuminate\Http\Request;
 
 class WebhookController extends Controller
 {
-    protected const PIPELINE_STATUSES = ['pending', 'ai_processing', 'clickup_review', 'ready'];
-
     public function __construct(protected SubmissionPublisher $publisher) {}
 
     public function publish(Request $request): JsonResponse
     {
         $submission = $this->resolveSubmission($request);
 
-        abort_if(! in_array($submission->status, self::PIPELINE_STATUSES, true), 422, 'Only submissions in the review pipeline can be published.');
+        abort_if(! in_array($submission->status, SubmissionStatus::pipeline(), true), 422, 'Only submissions in the review pipeline can be published.');
         abort_if(! $submission->publish_ready, 422, 'Submission is not marked as publish ready.');
 
         $property = $this->publisher->publish($submission);
@@ -40,7 +39,7 @@ class WebhookController extends Controller
             'clickup_task_id' => ['sometimes', 'string', 'max:100'],
         ]);
 
-        abort_if(! in_array($submission->status, self::PIPELINE_STATUSES, true), 422, 'Only submissions in the review pipeline can change status.');
+        abort_if(! in_array($submission->status, SubmissionStatus::pipeline(), true), 422, 'Only submissions in the review pipeline can change status.');
 
         $submission->update($validated);
 
@@ -54,9 +53,9 @@ class WebhookController extends Controller
     {
         $submission = $this->resolveSubmission($request);
 
-        abort_if(! in_array($submission->status, self::PIPELINE_STATUSES, true), 422, 'Only submissions in the review pipeline can be rejected.');
+        abort_if(! in_array($submission->status, SubmissionStatus::pipeline(), true), 422, 'Only submissions in the review pipeline can be rejected.');
 
-        $submission->update(['status' => 'rejected']);
+        $submission->update(['status' => SubmissionStatus::Rejected->value]);
 
         return response()->json([
             'message' => 'Submission rejected.',

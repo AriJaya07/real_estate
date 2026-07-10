@@ -22,6 +22,9 @@ class PropertySubmissionResource extends JsonResource
             'notes' => $this->notes,
             'publish_ready' => $this->publish_ready,
             'published_at' => $this->published_at,
+            'published_property_id' => $this->published_property_id,
+            'published_property' => new PropertyResource($this->whenLoaded('publishedProperty')),
+            'clickup_status' => $this->clickup_status,
             'created_at' => $this->created_at,
         ];
     }

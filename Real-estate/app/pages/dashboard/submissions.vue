@@ -159,6 +159,13 @@ async function handleExport() {
   }
 }
 
+function clickUpLabel(submission: PropertySubmission): string | null {
+  if (!submission.clickup_status) {
+    return null
+  }
+  return submission.clickup_status.replace(/\b\w/g, (character) => character.toUpperCase())
+}
+
 const detailFields = computed(() => {
   if (!selected.value) {
     return []
@@ -169,7 +176,7 @@ const detailFields = computed(() => {
     { label: 'Email', value: selected.value.email },
     { label: 'Address', value: selected.value.address },
     { label: 'Listing Price', value: formatPrice(selected.value.listing_price) },
-    { label: 'Publish Ready', value: selected.value.publish_ready ? 'Yes' : 'No' },
+    { label: 'ClickUp Status', value: clickUpLabel(selected.value) ?? '—' },
     { label: 'Submitted', value: formatDate(selected.value.created_at) },
     { label: 'Published', value: selected.value.published_at ? formatDate(selected.value.published_at) : '—' },
   ]
@@ -197,6 +204,17 @@ const detailFields = computed(() => {
           Export CSV
         </SecondaryButton>
       </div>
+    </div>
+
+    <div class="rounded-2xl border border-primary-100 bg-primary-50 px-5 py-4 text-sm text-primary-900">
+      <p class="font-semibold">How publishing works</p>
+      <p class="mt-1 text-primary-800">
+        Pick a listing on the website and submit your property details. Your submission is enriched by AI,
+        then reviewed by our team in ClickUp — press <span class="font-semibold">Sync ClickUp</span> to pull the
+        latest review status. Once it reaches <span class="font-semibold">Ready to Publish</span>, press
+        <span class="font-semibold">Publish</span> and your property goes live on the website as its own listing,
+        which you can then open here or manage from Dashboard → Properties.
+      </p>
     </div>
 
     <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
@@ -233,12 +251,11 @@ const detailFields = computed(() => {
               <tr v-for="submission in submissionStore.submissions" :key="submission.id" class="transition hover:bg-gray-50">
                 <td class="px-6 py-4">
                   <div class="flex items-center gap-3">
-                    <img
-                      v-if="submission.property?.image"
-                      :src="submission.property.image"
-                      :alt="submission.property.title"
-                      class="size-10 shrink-0 rounded-lg object-cover"
-                    >
+                    <PropertyImage
+                      :src="submission.property?.image ?? null"
+                      :alt="submission.property?.title ?? 'Property'"
+                      class="size-10 shrink-0 rounded-lg"
+                    />
                     <div class="min-w-0">
                       <p class="truncate font-medium text-gray-900">{{ submission.property?.title }}</p>
                       <p class="truncate text-xs text-gray-500">{{ formatDate(submission.created_at) }}</p>
@@ -256,6 +273,17 @@ const detailFields = computed(() => {
                   <span class="rounded-full px-3 py-1 text-xs font-semibold" :class="statusMeta(submission.status).badge">
                     {{ statusMeta(submission.status).label }}
                   </span>
+                  <p
+                    v-if="clickUpLabel(submission) && (submission.status === 'clickup_review' || submission.status === 'ai_processing')"
+                    class="mt-1 text-xs text-gray-500"
+                  >
+                    ClickUp: {{ clickUpLabel(submission) }}
+                  </p>
+                  <p v-if="submission.status === 'published'" class="mt-1 text-xs" :class="submission.published_property?.is_published ? 'text-green-600' : 'text-amber-600'">
+                    {{ submission.published_property
+                      ? (submission.published_property.is_published ? 'Live on the website' : 'Taken off the website')
+                      : 'Listing was deleted' }}
+                  </p>
                 </td>
                 <td class="hidden px-6 py-4 md:table-cell">
                   <span v-if="submission.published_at" class="text-gray-700">{{ formatDate(submission.published_at) }}</span>
@@ -275,6 +303,16 @@ const detailFields = computed(() => {
                       </svg>
                       Publish
                     </button>
+                    <NuxtLink
+                      v-if="submission.status === 'published' && submission.published_property"
+                      :to="`/properties/${submission.published_property.id}`"
+                      class="inline-flex items-center gap-1.5 rounded-lg bg-green-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-green-700"
+                    >
+                      <svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
+                      </svg>
+                      View listing
+                    </NuxtLink>
                     <button
                       type="button"
                       class="rounded-lg p-2 text-gray-500 transition hover:bg-primary-50 hover:text-primary-600"
@@ -344,12 +382,11 @@ const detailFields = computed(() => {
     <Modal v-model="detailsOpen" title="Submission Details" size="lg">
       <div v-if="selected" class="space-y-6">
         <div class="flex items-center gap-4">
-          <img
-            v-if="selected.property?.image"
-            :src="selected.property.image"
-            :alt="selected.property.title"
-            class="size-16 rounded-xl object-cover"
-          >
+          <PropertyImage
+            :src="selected.property?.image ?? null"
+            :alt="selected.property?.title ?? 'Property'"
+            class="size-16 shrink-0 rounded-xl"
+          />
           <div>
             <h3 class="text-base font-semibold text-gray-900">{{ selected.property?.title }}</h3>
             <p class="text-sm text-gray-500">{{ selected.property?.location }}</p>
@@ -414,6 +451,18 @@ const detailFields = computed(() => {
           <p class="text-xs font-semibold uppercase tracking-wide text-gray-400">Notes</p>
           <p class="mt-1 text-sm text-gray-700">{{ selected.notes }}</p>
         </div>
+
+        <div v-if="selected.status === 'published' && selected.published_property" class="flex justify-end border-t border-gray-100 pt-4">
+          <NuxtLink
+            :to="`/properties/${selected.published_property.id}`"
+            class="inline-flex items-center gap-2 rounded-xl bg-primary-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-700"
+          >
+            View live listing
+            <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+            </svg>
+          </NuxtLink>
+        </div>
       </div>
     </Modal>
 
@@ -430,11 +479,6 @@ const detailFields = computed(() => {
         </div>
         <Textarea v-model="editForm.description" label="Description" required />
         <Textarea v-model="editForm.notes" label="Notes" :rows="3" />
-        <Switch
-          v-model="editForm.publish_ready"
-          label="Publish Ready"
-          description="Allow this listing to be published to the website once approved"
-        />
 
         <p v-if="editError" role="alert" class="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-600">{{ editError }}</p>
 

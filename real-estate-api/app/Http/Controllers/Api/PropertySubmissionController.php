@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Enums\SubmissionStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StorePropertySubmissionRequest;
 use App\Http\Requests\UpdatePropertySubmissionRequest;
 use App\Http\Resources\PropertySubmissionResource;
 use App\Models\PropertySubmission;
 use App\Services\ClickUpService;
+use App\Services\ClickUpSyncService;
 use App\Services\N8nWebhookService;
 use App\Services\SubmissionPublisher;
 use Illuminate\Contracts\Database\Eloquent\Builder;
@@ -18,8 +20,6 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class PropertySubmissionController extends Controller
 {
-    protected const EDITABLE_STATUSES = ['draft', 'rejected'];
-
     public function __construct(
         protected N8nWebhookService $n8n,
         protected ClickUpService $clickUp,
@@ -46,7 +46,7 @@ class PropertySubmissionController extends Controller
     public function update(UpdatePropertySubmissionRequest $request, PropertySubmission $propertySubmission): PropertySubmissionResource
     {
         abort_if($propertySubmission->user_id !== $request->user()->id, 403, 'You can only edit your own submissions.');
-        abort_if(! in_array($propertySubmission->status, self::EDITABLE_STATUSES, true), 422, 'Only draft or rejected submissions can be edited.');
+        abort_if(! in_array($propertySubmission->status, SubmissionStatus::editable(), true), 422, 'Only draft or rejected submissions can be edited.');
 
         $propertySubmission->update($request->validated());
         $propertySubmission->load(['property', 'user']);
@@ -59,7 +59,7 @@ class PropertySubmissionController extends Controller
     public function destroy(Request $request, PropertySubmission $propertySubmission): JsonResponse
     {
         abort_if($propertySubmission->user_id !== $request->user()->id, 403, 'You can only delete your own submissions.');
-        abort_if(! in_array($propertySubmission->status, self::EDITABLE_STATUSES, true), 422, 'Only draft or rejected submissions can be deleted.');
+        abort_if(! in_array($propertySubmission->status, SubmissionStatus::editable(), true), 422, 'Only draft or rejected submissions can be deleted.');
 
         $propertySubmission->delete();
 
@@ -107,7 +107,13 @@ class PropertySubmissionController extends Controller
     {
         return $request->user()
             ->submissions()
-            ->with('property')
+            ->with(['property', 'publishedProperty'])
+            ->when($request->integer('related_property_id'), function ($query, $propertyId) {
+                $query->where(function ($query) use ($propertyId) {
+                    $query->where('property_id', $propertyId)
+                        ->orWhere('published_property_id', $propertyId);
+                });
+            })
             ->when($request->query('search'), function ($query, $search) {
                 $query->where(function ($query) use ($search) {
                     $query->where('owner_name', 'ilike', "%{$search}%")
@@ -123,56 +129,33 @@ class PropertySubmissionController extends Controller
     public function publish(Request $request, PropertySubmission $propertySubmission): PropertySubmissionResource
     {
         abort_if($propertySubmission->user_id !== $request->user()->id, 403, 'You can only publish your own submissions.');
-        abort_if($propertySubmission->status !== 'ready', 422, 'Only submissions that are ready to publish can be published.');
+        abort_if($propertySubmission->status !== SubmissionStatus::Ready->value, 422, 'Only submissions that are ready to publish can be published.');
 
         $propertySubmission->load('property');
         $this->publisher->publish($propertySubmission);
 
-        return new PropertySubmissionResource($propertySubmission->load('property'));
+        return new PropertySubmissionResource($propertySubmission->load(['property', 'publishedProperty']));
     }
 
-    public function syncClickUp(Request $request): JsonResponse
+    public function syncClickUp(Request $request, ClickUpSyncService $sync): JsonResponse
     {
         $submissions = $request->user()
             ->submissions()
             ->with('property')
-            ->whereIn('status', ['ai_processing', 'clickup_review'])
-            ->whereNotNull('clickup_task_id')
+            ->awaitingClickUp()
             ->get();
 
-        $updated = 0;
-
-        foreach ($submissions as $submission) {
-            $status = $this->clickUp->getTaskStatus($submission->clickup_task_id);
-
-            if ($status === null) {
-                continue;
-            }
-
-            if (in_array($status['type'], ['done', 'closed'], true)) {
-                if ($submission->publish_ready) {
-                    $this->publisher->publish($submission);
-                } else {
-                    $submission->update(['status' => 'ready']);
-                }
-                $updated++;
-            } elseif ($submission->status !== 'clickup_review') {
-                $submission->update(['status' => 'clickup_review']);
-                $updated++;
-            }
-        }
-
-        return response()->json(['updated' => $updated, 'checked' => $submissions->count()]);
+        return response()->json($sync->sync($submissions));
     }
 
     protected function dispatchPipeline(PropertySubmission $submission): void
     {
-        if ($submission->status !== 'pending') {
+        if ($submission->status !== SubmissionStatus::Pending->value) {
             return;
         }
 
         if ($this->n8n->send($submission)) {
-            $submission->update(['status' => 'ai_processing']);
+            $submission->update(['status' => SubmissionStatus::AiProcessing->value]);
 
             return;
         }
@@ -180,7 +163,11 @@ class PropertySubmissionController extends Controller
         $taskId = $this->clickUp->createTask($submission);
 
         if ($taskId !== null) {
-            $submission->update(['status' => 'clickup_review', 'clickup_task_id' => $taskId]);
+            $submission->update([
+                'status' => SubmissionStatus::ClickUpReview->value,
+                'clickup_task_id' => $taskId,
+                'clickup_status' => 'to do',
+            ]);
         }
     }
 }

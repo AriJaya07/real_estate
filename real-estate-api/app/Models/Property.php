@@ -19,7 +19,17 @@ class Property extends Model
         return [
             'price' => 'decimal:2',
             'is_published' => 'boolean',
+            'published_at' => 'datetime',
         ];
+    }
+
+    protected static function booted(): void
+    {
+        static::saving(function (Property $property): void {
+            if ($property->is_published && ($property->isDirty('is_published') || ! $property->exists)) {
+                $property->published_at = now();
+            }
+        });
     }
 
     public function submissions(): HasMany

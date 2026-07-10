@@ -13,6 +13,7 @@ export interface Property {
   image: string | null
   description: string
   is_published: boolean
+  published_at: string | null
   created_at: string
 }
 
@@ -40,6 +41,9 @@ export interface PropertySubmission {
   notes: string | null
   publish_ready: boolean
   published_at: string | null
+  published_property_id: number | null
+  published_property?: Property | null
+  clickup_status: string | null
   created_at: string
 }
 

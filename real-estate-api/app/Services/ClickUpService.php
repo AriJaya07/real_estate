@@ -72,6 +72,34 @@ class ClickUpService
         }
     }
 
+    /**
+     * Mark the ClickUp task closed once the submission is published.
+     */
+    public function closeTask(string $taskId): bool
+    {
+        $token = config('services.clickup.token');
+
+        if (! $token) {
+            return false;
+        }
+
+        try {
+            return Http::withHeaders(['Authorization' => $token])
+                ->timeout(5)
+                ->put("https://api.clickup.com/api/v2/task/{$taskId}", [
+                    'status' => 'closed',
+                ])
+                ->successful();
+        } catch (Throwable $exception) {
+            Log::warning('ClickUp task close failed.', [
+                'task_id' => $taskId,
+                'error' => $exception->getMessage(),
+            ]);
+
+            return false;
+        }
+    }
+
     protected function taskDescription(PropertySubmission $submission): string
     {
         return implode("\n", [

@@ -4,6 +4,7 @@ import { extractErrorMessage } from '~/services/api'
 definePageMeta({ layout: 'auth', middleware: 'guest' })
 
 const auth = useAuthStore()
+const { push } = useToast()
 
 const form = reactive({
   username: '',
@@ -18,7 +19,8 @@ async function handleRegister() {
   error.value = ''
   try {
     await auth.register(form)
-    await navigateTo('/login')
+    push(`Welcome to DreamRue, ${form.username}! You are now signed in.`)
+    await navigateTo('/')
   } catch (exception) {
     error.value = extractErrorMessage(exception)
   } finally {

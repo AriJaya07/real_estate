@@ -18,6 +18,7 @@ class PropertyResource extends JsonResource
             'image' => $this->image,
             'description' => $this->description,
             'is_published' => $this->is_published,
+            'published_at' => $this->published_at,
             'created_at' => $this->created_at,
         ];
     }

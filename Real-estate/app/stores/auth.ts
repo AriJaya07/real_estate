@@ -10,7 +10,9 @@ export const useAuthStore = defineStore('auth', () => {
   const isAuthenticated = computed(() => token.value !== '')
 
   async function register(credentials: AuthCredentials): Promise<void> {
-    await api.post('/register', credentials)
+    const { data } = await api.post<{ user: User; token: string }>('/register', credentials)
+    token.value = data.token
+    user.value = data.user
   }
 
   async function login(credentials: AuthCredentials): Promise<void> {
