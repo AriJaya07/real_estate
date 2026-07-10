@@ -7,6 +7,26 @@
 <a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
 </p>
 
+## Real Estate API — Project Documentation
+
+Laravel 13 REST API for the Real Estate Management System (Nuxt 4 frontend lives in `../Real-estate/`).
+
+| Doc | What's inside |
+|---|---|
+| [docs/deployment.md](docs/deployment.md) | **Deploy & update guide** — Contabo VPS, Docker, DB ops, troubleshooting |
+| [docs/architecture.md](docs/architecture.md) | System design, components, submission pipeline |
+| [docs/environment.md](docs/environment.md) | Local setup, env vars, third-party services |
+| [docs/api-patterns.md](docs/api-patterns.md) | Endpoints, auth, response conventions |
+| [docs/domain.md](docs/domain.md) | Glossary, entities, business rules |
+| [docs/prd.md](docs/prd.md) | Requirements & user stories |
+| [docs/coding-standards.md](docs/coding-standards.md) | Style & patterns |
+| [docs/testing-strategy.md](docs/testing-strategy.md) | Pest conventions, what to test |
+| [docs/tech-debt.md](docs/tech-debt.md) | Known debt & deliberate quirks |
+| [agent-rules.md](agent-rules.md) | Rules for AI agents working in this repo |
+| [ai-prompts/](ai-prompts/) | Reusable AI prompt templates (feature, bug fix, review, refactor, tests, docs) |
+
+Quick start: see [docs/environment.md](docs/environment.md). Deploying: see [docs/deployment.md](docs/deployment.md).
+
 ## About Laravel
 
 Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
