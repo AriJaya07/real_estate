@@ -11,7 +11,7 @@ export default defineNuxtConfig({
   },
   routeRules: {
     '/api/**': {
-      proxy: `${process.env.API_PROXY_TARGET}`
+      proxy: `${process.env.NUXT_PUBLIC_API_BASE}`
     },
   },
   runtimeConfig: {
