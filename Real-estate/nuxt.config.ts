@@ -9,9 +9,12 @@ export default defineNuxtConfig({
   vite: {
     plugins: [tailwindcss()],
   },
+  routeRules: {
+    '/api/**': { proxy: 'http://62.171.156.55:8081/api/**' },
+  },
   runtimeConfig: {
     public: {
-      apiBase: 'http://localhost:8000/api',
+      apiBase: 'http://62.171.156.55:8081/api',
     },
   },
   app: {
