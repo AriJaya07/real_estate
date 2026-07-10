@@ -10,11 +10,13 @@ export default defineNuxtConfig({
     plugins: [tailwindcss()],
   },
   routeRules: {
-    '/api/**': { proxy: 'http://62.171.156.55:8081/api/**' },
+    '/api/**': {
+      proxy: `${process.env.API_PROXY_TARGET}`
+    },
   },
   runtimeConfig: {
     public: {
-      apiBase: 'http://62.171.156.55:8081/api',
+      apiBase: '/api',
     },
   },
   app: {
