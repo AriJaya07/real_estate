@@ -18,7 +18,7 @@ async function handleLogin() {
   error.value = ''
   try {
     await auth.login(form)
-    await navigateTo('/dashboard')
+    await navigateTo('/')
   } catch (exception) {
     error.value = extractErrorMessage(exception)
   } finally {
